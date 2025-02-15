@@ -1,9 +1,29 @@
 {% extends 'base.html' %}
+{% load detection_extras %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h2 class="mb-4">Detection History</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Detection History</h2>
+            {% if detections %}
+            <form action="{% url 'clear_history' %}" method="post" onsubmit="return confirm('Are you sure you want to clear all detection history? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear History
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
         
         <div class="row">
             {% for detection in detections %}
@@ -21,7 +41,7 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>{{ object }}</span>
                                     <span class="badge bg-primary rounded-pill">
-                                        {{ detection.get_confidence_scores|index:forloop.counter0|floatformat:2 }}%
+                                        {{ detection.get_confidence_scores|index:forloop.counter0|floatformat:1 }}%
                                     </span>
                                 </div>
                             </div>

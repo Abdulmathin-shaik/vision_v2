@@ -5,6 +5,12 @@
     <div class="col-12">
         <h2 class="mb-4">Detection Analytics</h2>
 
+        {% if error_message %}
+        <div class="alert alert-warning">
+            {{ error_message }}
+        </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card">

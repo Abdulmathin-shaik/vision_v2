@@ -2,9 +2,9 @@ from django import template
 
 register = template.Library()
 
-@register.filter
+@register.filter(name='index')
 def index(lst, i):
     try:
-        return lst[i]
+        return float(lst[i]) * 100  # Convert to percentage
     except:
-        return None 
+        return 0 
