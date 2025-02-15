@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Object Detection</h2>
+                
+                <div class="mb-4">
+                    <h4>Upload Image</h4>
+                    <form id="uploadForm" class="mb-3">
+                        {% csrf_token %}
+                        <input type="file" class="form-control" id="imageInput" accept="image/*">
+                        <button type="submit" class="btn btn-primary mt-2">Detect Objects</button>
+                    </form>
+                </div>
+
+                <div class="mb-4">
+                    <h4>Use Camera</h4>
+                    <div class="camera-feed">
+                        <video id="video" class="w-100 mb-2" style="display: none;"></video>
+                        <canvas id="canvas" class="w-100" style="display: none;"></canvas>
+                        <div class="d-grid gap-2">
+                            <button id="startCamera" class="btn btn-secondary">Start Camera</button>
+                            <button id="captureImage" class="btn btn-primary" style="display: none;">Capture and Detect</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="result" class="detection-result" style="display: none;">
+                    <h4>Detection Results</h4>
+                    <div class="result-content">
+                        <img id="resultImage" class="result-image mb-3">
+                        <div id="detectionsList" class="list-group">
+                            <!-- Detection results will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File upload handling
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        const imageFile = document.getElementById('imageInput').files[0];
+        if (!imageFile) {
+            alert('Please select an image first');
+            return;
+        }
+        formData.append('image', imageFile);
+        processImage(formData);
+    });
+
+    // Camera handling
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const startButton = document.getElementById('startCamera');
+    const captureButton = document.getElementById('captureImage');
+    let stream = null;
+
+    startButton.addEventListener('click', async function() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.style.display = 'block';
+            video.play();
+            startButton.style.display = 'none';
+            captureButton.style.display = 'block';
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            alert('Error accessing camera. Please make sure you have granted camera permissions.');
+        }
+    });
+
+    captureButton.addEventListener('click', function() {
+        canvas.style.display = 'block';
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        canvas.toBlob(function(blob) {
+            const formData = new FormData();
+            formData.append('image', blob, 'capture.jpg');
+            processImage(formData);
+            
+            // Stop the camera
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.style.display = 'none';
+                canvas.style.display = 'none';
+                captureButton.style.display = 'none';
+                startButton.style.display = 'block';
+            }
+        }, 'image/jpeg');
+    });
+
+    function processImage(formData) {
+        document.getElementById('result').style.display = 'none';
+        
+        fetch('/process-image/', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayResults(data);
+            } else {
+                alert('Error processing image');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error processing image');
+        });
+    }
+
+    function displayResults(data) {
+        const resultDiv = document.getElementById('result');
+        const resultImage = document.getElementById('resultImage');
+        const detectionsList = document.getElementById('detectionsList');
+
+        resultImage.src = data.result_image_url;
+        
+        detectionsList.innerHTML = '';
+        data.detected_objects.forEach((obj, index) => {
+            const confidence = (data.confidence_scores[index] * 100).toFixed(2);
+            const item = document.createElement('div');
+            item.className = 'list-group-item';
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>${obj}</span>
+                    <span class="badge bg-primary rounded-pill">${confidence}%</span>
+                </div>
+            `;
+            detectionsList.appendChild(item);
+        });
+
+        resultDiv.style.display = 'block';
+    }
+</script>
+{% endblock %} 

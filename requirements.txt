@@ -1,0 +1,6 @@
+django==4.2.7
+ultralytics==8.0.196
+pillow==10.1.0
+numpy==1.24.3
+pandas==2.0.3
+plotly==5.18.0 

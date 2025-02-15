@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Detection History</h2>
+        
+        <div class="row">
+            {% for detection in detections %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card detection-card">
+                    <img src="{{ detection.result_image.url }}" class="card-img-top" alt="Detection result">
+                    <div class="card-body">
+                        <h5 class="card-title">Detection #{{ detection.id }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">{{ detection.timestamp|date:"F j, Y, g:i a" }}</small>
+                        </p>
+                        <div class="list-group">
+                            {% for object in detection.get_detected_objects %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>{{ object }}</span>
+                                    <span class="badge bg-primary rounded-pill">
+                                        {{ detection.get_confidence_scores|index:forloop.counter0|floatformat:2 }}%
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No detections found. Try detecting some objects first!
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
